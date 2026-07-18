@@ -1,0 +1,127 @@
+services:
+
+  # ── App database (PostgreSQL + pgvector) ──────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: retrieval-lab-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Temporal database (odvojen PostgreSQL) ────────────────────────────────
+  temporal-postgres:
+    image: postgres:16-alpine
+    container_name: retrieval-temporal-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: temporal
+    volumes:
+      - temporal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: retrieval-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Temporal server ───────────────────────────────────────────────────────
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: retrieval-temporal
+    depends_on:
+      temporal-postgres:
+        condition: service_healthy
+    environment:
+      DB: postgresql
+      DB_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POSTGRES_SEEDS: temporal-postgres
+      POSTGRES_DB: temporal
+    ports:
+      - "7233:7233"
+
+  # ── Temporal Web UI ───────────────────────────────────────────────────────
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    container_name: retrieval-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports:
+      - "8080:8080"
+
+  # ── FastAPI – Search & Ingest API ─────────────────────────────────────────
+#  api:
+#    build:
+#      context: .
+#      dockerfile: services/api/Dockerfile
+#    container_name: retrieval-api
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    environment:
+#      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+#      REDIS_URL: redis://redis:6379
+#      TEMPORAL_HOST: temporal:7233
+#    volumes:
+#      - ./retrieval:/app/retrieval
+#      - ./services/api:/app/services/api
+#    ports:
+#      - "8000:8000"
+#    command: uvicorn services.api.main:app --host 0.0.0.0 --port 8000 --reload
+#
+#  # ── Temporal Worker ───────────────────────────────────────────────────────
+#  worker:
+#    build:
+#      context: .
+#      dockerfile: services/worker/Dockerfile
+#    container_name: retrieval-worker
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      temporal:
+#        condition: service_started
+#    environment:
+#      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+#      REDIS_URL: redis://redis:6379
+#      TEMPORAL_HOST: temporal:7233
+#    volumes:
+#      - ./retrieval:/app/retrieval
+#      - ./services/worker:/app/services/worker
+#    command: python -m services.worker.main
+
+volumes:
+  postgres_data:
+  temporal_postgres_data:
+  redis_data:
