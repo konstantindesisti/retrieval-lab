@@ -22,4 +22,4 @@ async def session_factory() -> AsyncIterator[AsyncSession]:
             yield session
         except SQLAlchemyError as e:
             await session.rollback()
-            raise DBError(message="Session error") from e
+            raise DBError(msg="Session error") from e
