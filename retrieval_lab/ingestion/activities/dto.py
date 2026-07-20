@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 
+# ============== SCRAPER ==============
 @dataclass
 class RSSEntry:
     url: str
@@ -24,6 +25,7 @@ class ScrapedArticle:
             self.content_hash = hashlib.sha256(self.body.encode()).hexdigest()
 
 
+# ============== CHUNKER ==============
 @dataclass
 class ChunkData:
     content: str
@@ -39,4 +41,25 @@ class ChunkedDocument:
     source: str
     chunks: list[ChunkData]
     strategy: str
+
+# ============== EMBEDDER ==============
+@dataclass
+class EmbeddedChunk:
+    content: str
+    embedding: list[float]
+    chunk_index: int
+    total_chunks: int
+    meta: dict = field(default_factory=dict)
+
+@dataclass
+class EmbeddedDocument:
+    article_url: str
+    article_title: str
+    article_body: str  # needed for indexer for Article table
+    source: str
+    chunks: list[EmbeddedChunk]
+    strategy: str
+    embedding_provider: str
+    embedding_model: str
+
 
