@@ -3,12 +3,15 @@ from typing import TYPE_CHECKING
 
 from temporalio import activity
 
-
-from retrieval_lab.config import settings
-from retrieval_lab.ingestion.activities.dto import EmbeddedDocument, EmbeddedChunk, ChunkedDocument
+from retrieval_lab.ingestion.dto import (
+    EmbeddedDocument,
+    EmbeddedChunk,
+    ChunkedDocument,
+)
 from retrieval_lab.ingestion.embedding.factory import get_embedder
+
 if TYPE_CHECKING:
-    from retrieval_lab.cache.client import RedisClient
+    from retrieval_lab.cache.redis import RedisClient
 
 
 class EmbeddingActivities:
@@ -17,9 +20,9 @@ class EmbeddingActivities:
 
     @activity.defn
     async def generate_embeddings(
-            self,
-            doc: ChunkedDocument,
-            article_body: str,
+        self,
+        doc: ChunkedDocument,
+        article_body: str,
     ) -> EmbeddedDocument:
         """
         Converts a ChunkedDocument into an EmbeddedDocument by generating

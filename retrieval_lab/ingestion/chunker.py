@@ -20,15 +20,15 @@ Trade-off:
   A larger overlap generally improves retrieval recall but increases the number
   of chunks, resulting in higher storage and embedding costs.
 """
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from dataclasses import dataclass, field
 import structlog
-from temporalio import activity
 
-from retrieval_lab.ingestion.activities.dto import  ChunkData, ChunkedDocument, ScrapedArticle
-
+from retrieval_lab.ingestion.dto import (
+    ChunkData,
+    ScrapedArticle,
+)
 
 
 log = structlog.getLogger(__name__)
@@ -56,6 +56,7 @@ def _split_into_words(text: str) -> list[str]:
         A list of words.
     """
     return text.split()
+
 
 def _fixed_size_chunk(
     text: str,
@@ -90,7 +91,7 @@ def _fixed_size_chunk(
     while start < len(words):
         end = start + chunk_size
         chunk_words = words[start:end]
-        chunks.append(' '.join(chunk_words))
+        chunks.append(" ".join(chunk_words))
         if end >= len(words):
             break
         start += step
@@ -138,6 +139,7 @@ def _sliding_window_chunk(
 
     return chunks
 
+
 def _build_chunk_data(
     raw_chunks: list[str],
     article: ScrapedArticle,
@@ -172,7 +174,7 @@ def _build_chunk_data(
             "source": article.source,
             "chunk_index": idx,
             "strategy": strategy,
-            **article.meta,          # genre, tags, platform iz scrapera
+            **article.meta,  # genre, tags, platform iz scrapera
         }
 
         result.append(
@@ -185,70 +187,3 @@ def _build_chunk_data(
         )
 
     return result
-
-
-# ============== TEMPORAL ACTIVITY ==============
-@activity.defn
-async def chunk_document(
-        article: ScrapedArticle,
-        strategy: str = "fixed",
-        chunk_size: int = 512,
-        overlap: int = 64,
-) -> ChunkedDocument:
-    """
-    Splits a ScrapedArticle into chunks and returns a ChunkedDocument.
-
-    Args:
-        article: ScrapedArticle object containing the article content
-            and metadata.
-        strategy: Chunking strategy to use. Supported values:
-            "fixed" | "sliding".
-        chunk_size: Number of words per chunk.
-        overlap: Number of overlapping words between consecutive chunks.
-
-    Temporal passes all parameters from the workflow, making it easy
-    to change the strategy without redeploying workers (only the workflow
-    call needs to be updated).
-
-    Returns:
-        A ChunkedDocument containing the generated chunks and metadata.
-    """
-    log.info(
-        "chunking_document",
-        url=article.url,
-        strategy=strategy,
-        chunk_size=chunk_size,
-        overlap=overlap,
-        body_len=len(article.body),
-    )
-
-    if strategy == "fixed":
-        raw_chunks = _fixed_size_chunk(article.body, chunk_size, overlap)
-    elif strategy == "sliding":
-        step = chunk_size - overlap
-        raw_chunks = _sliding_window_chunk(article.body, chunk_size, step)
-    else:
-        raise ValueError(f"Unknown chunking strategy: {strategy!r}")
-
-    # Ukloni prekratke chunkove (ostaci od headers/nav teksta)
-    raw_chunks = [c for c in raw_chunks if len(c.split()) >= 20]
-
-    chunk_data = _build_chunk_data(raw_chunks, article, strategy)
-
-    log.info(
-        "chunking_complete",
-        url=article.url,
-        strategy=strategy,
-        num_chunks=len(chunk_data),
-    )
-
-    return ChunkedDocument(
-        article_url=article.url,
-        article_title=article.title,
-        source=article.source,
-        chunks=chunk_data,
-        strategy=strategy,
-    )
-    
-
-

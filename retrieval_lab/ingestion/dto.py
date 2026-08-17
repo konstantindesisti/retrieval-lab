@@ -42,6 +42,7 @@ class ChunkedDocument:
     chunks: list[ChunkData]
     strategy: str
 
+
 # ============== EMBEDDER ==============
 @dataclass
 class EmbeddedChunk:
@@ -50,6 +51,7 @@ class EmbeddedChunk:
     chunk_index: int
     total_chunks: int
     meta: dict = field(default_factory=dict)
+
 
 @dataclass
 class EmbeddedDocument:
@@ -61,5 +63,3 @@ class EmbeddedDocument:
     strategy: str
     embedding_provider: str
     embedding_model: str
-
-

@@ -16,6 +16,7 @@ The Chunk.meta JSONB column is essential for metadata filtering during search:
     "year": 2022
   }
 """
+
 from datetime import datetime
 from typing import Optional
 
@@ -32,9 +33,10 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from retrieval_lab.db.base import Base
+from retrieval_lab.config import settings
 
 
 class Article(Base):
@@ -50,6 +52,7 @@ class Article(Base):
         scraping, chunking, and embedding processes.
       - `meta` stores rich, raw domain-specific metadata (e.g., IGDB API integration).
     """
+
     __tablename__ = "articles"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -63,7 +66,7 @@ class Article(Base):
     # False dok Temporal workflow nije zavrsio ingestion
     is_indexed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    # Slobodan prostor za game tags, genre, platform i sl. koji dolaze iz IGDB API-ja
+    # Free space for game tags, platform, genre and data from IGDB API
     meta: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     scraped_at: Mapped[datetime] = mapped_column(
@@ -96,6 +99,7 @@ class Chunk(Base):
         pre-filtering (e.g., WHERE meta->'genre' ? 'RPG') directly inside the vector search
         index without costly SQL joins.
     """
+
     __tablename__ = "chunks"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -110,7 +114,7 @@ class Chunk(Base):
     # Dimenzija mora da odgovara embedding modelu iz settings.py (1536 za text-embedding-3-small)
     # nullable=True jer se chunk prvo insertuje, pa se embedding popunjava
     embedding: Mapped[Optional[list[float]]] = mapped_column(
-        Vector(1536), nullable=True
+        Vector(settings.active_embedding_provider.dimension), nullable=True
     )
 
     # Pozicija chunka unutar roditelja (0-indexed)
@@ -171,5 +175,3 @@ class SearchLog(Base):
 
     def __repr__(self) -> str:
         return f"<SearchLog id={self.id} mode={self.mode!r} query={self.query[:40]!r}>"
-
-

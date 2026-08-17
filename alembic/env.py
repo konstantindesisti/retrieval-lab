@@ -16,7 +16,7 @@ logger = structlog.get_logger(__name__)
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 
-logger.info(f'Database migration started. Number of tables  {Base.metadata.tables}')
+logger.info(f"Database migration started. Number of tables  {Base.metadata.tables}")
 config = context.config
 
 DB_URL = settings.DB_URL
@@ -82,7 +82,6 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    from retrieval_lab.config.settings import settings
 
     print(f"\n--- ALEMBIC POKUŠAVA DA SE POVEŽE NA: {DB_URL} ---\n")
 

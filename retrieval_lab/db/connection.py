@@ -15,6 +15,7 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 @asynccontextmanager
 async def session_factory() -> AsyncIterator[AsyncSession]:
     async with AsyncSessionLocal() as session:

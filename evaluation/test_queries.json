@@ -1,0 +1,78 @@
+[
+  {
+    "query": "best open world RPG games 2023",
+    "relevant_urls": [
+      "https://www.ign.com/articles/baldurs-gate-3-review",
+      "https://www.ign.com/articles/starfield-review",
+      "https://www.ign.com/articles/hogwarts-legacy-review"
+    ],
+    "notes": "Should cover BG3, Starfield, Hogwarts Legacy reviews"
+  },
+  {
+    "query": "Elden Ring DLC Shadow of the Erdtree review",
+    "relevant_urls": [
+      "https://www.ign.com/articles/elden-ring-shadow-of-the-erdtree-dlc-review"
+    ],
+    "notes": "Specific to DLC – a great test for exact match retrieval"
+  },
+  {
+    "query": "games with best story narrative 2023 2024",
+    "relevant_urls": [
+      "https://www.ign.com/articles/baldurs-gate-3-review",
+      "https://www.ign.com/articles/alan-wake-2-review"
+    ],
+    "notes": "Semantic query – vector search should outperform keyword here"
+  },
+  {
+    "query": "PlayStation 5 exclusive games worth buying",
+    "relevant_urls": [
+      "https://www.ign.com/articles/spider-man-2-review",
+      "https://www.ign.com/articles/final-fantasy-16-review"
+    ],
+    "notes": "Platform-specific query – good for metadata filtering test"
+  },
+  {
+    "query": "PC gaming performance optimization tips",
+    "relevant_urls": [
+      "https://www.ign.com/articles/how-to-optimize-pc-games-performance-settings"
+    ],
+    "notes": "Keyword-friendly query – keyword retriever should perform well"
+  },
+  {
+    "query": "multiplayer cooperative games friends",
+    "relevant_urls": [
+      "https://www.ign.com/articles/helldivers-2-review",
+      "https://www.ign.com/articles/baldurs-gate-3-review"
+    ],
+    "notes": "Semantic query without specific game titles"
+  },
+  {
+    "query": "Baldur's Gate 3 character build guide",
+    "relevant_urls": [
+      "https://www.ign.com/articles/baldurs-gate-3-best-builds"
+    ],
+    "notes": "Specific game + content type"
+  },
+  {
+    "query": "indie games hidden gems underrated 2023",
+    "relevant_urls": [
+      "https://www.ign.com/articles/best-hidden-gem-indie-games-2023"
+    ],
+    "notes": "Subjective query – tests semantic understanding"
+  },
+  {
+    "query": "action RPG loot system comparison Diablo Path of Exile",
+    "relevant_urls": [
+      "https://www.ign.com/articles/diablo-4-review",
+      "https://www.ign.com/articles/path-of-exile-review"
+    ],
+    "notes": "Multi-entity comparison query"
+  },
+  {
+    "query": "Nintendo Switch games for adults",
+    "relevant_urls": [
+      "https://www.ign.com/articles/best-nintendo-switch-games"
+    ],
+    "notes": "Platform + audience filter combination"
+  }
+]

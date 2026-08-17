@@ -20,10 +20,12 @@ def _get_shared_processors():
     """
     return [
         structlog.contextvars.merge_contextvars,  # Thread-local/async context variables
-        structlog.stdlib.add_logger_name,        # Logger name
-        structlog.stdlib.add_log_level,          # "info", "warning" etc.
-        structlog.stdlib.ExtraAdder(),           # Integrates stdlib extra= dict
-        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),  # Cleaner time format for local dev
+        structlog.stdlib.add_logger_name,  # Logger name
+        structlog.stdlib.add_log_level,  # "info", "warning" etc.
+        structlog.stdlib.ExtraAdder(),  # Integrates stdlib extra= dict
+        structlog.processors.TimeStamper(
+            fmt="%Y-%m-%d %H:%M:%S"
+        ),  # Cleaner time format for local dev
         structlog.processors.CallsiteParameterAdder(
             [
                 structlog.processors.CallsiteParameter.FILENAME,
@@ -33,8 +35,9 @@ def _get_shared_processors():
         ),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.format_exc_info,   # Properly formats tracebacks
+        structlog.processors.format_exc_info,  # Properly formats tracebacks
     ]
+
 
 def _configure_stdlib_logging(
     level: int,
@@ -67,7 +70,9 @@ def _configure_stdlib_logging(
         foreign_pre_chain=shared_processors,
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            structlog.dev.ConsoleRenderer(colors=False, exception_formatter=structlog.dev.plain_traceback),
+            structlog.dev.ConsoleRenderer(
+                colors=False, exception_formatter=structlog.dev.plain_traceback
+            ),
         ],
     )
     file_handler = logging.handlers.RotatingFileHandler(
@@ -87,6 +92,7 @@ def _configure_stdlib_logging(
     )
 
     _suppress_noisy_loggers()
+
 
 def _suppress_noisy_loggers() -> None:
     """

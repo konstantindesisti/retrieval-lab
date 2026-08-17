@@ -4,16 +4,31 @@ redis:
 
 # === Embedding ===
 embedding_option:
-  provider: "fastembed"
+  provider: "fastembed"  # Promeni ovo u "ollama" ili "cohere" da bi ih aktivirao
 
 embedding_providers:
-  # Provider options
   fastembed:
     model_name: "BAAI/bge-small-en-v1.5"
+    dimension: 384
 
   ollama:
     model_name: "nomic-embed-text"
-    host: "http://localhost:11434"
+    dimension: 768
+    host: "http://localhost:11434"  # Opciono, specifično za ollama
 
   cohere:
     model_name: "embed-multilingual-v3.0"
+    dimension: 1024
+    # api_key se može uzeti iz .env fajla, ne mora biti ovde
+
+# === Chunking ===
+chunker:
+  strategy: "fixed"
+  size: 512
+  overlap: 54
+
+# === Temporal ===
+temporal:
+  host: "localhost:7233"
+  namespace: "default"
+  task_queue: "ingestion-queue"

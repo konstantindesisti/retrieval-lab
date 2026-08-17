@@ -1,39 +1,55 @@
-import os
 import pathlib
-from typing import Any
+from typing import Optional
 
-from pydantic import computed_field
-from pydantic_settings import BaseSettings, SettingsConfigDict, YamlConfigSettingsSource, DotEnvSettingsSource, \
-    PydanticBaseSettingsSource
+from pydantic import computed_field, Field, ConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+    YamlConfigSettingsSource,
+    DotEnvSettingsSource,
+    PydanticBaseSettingsSource,
+)
 
 _CURRENT_DIR = pathlib.Path(__file__).resolve().parent
 ROOT_DIR = _CURRENT_DIR.parent.parent
+
 
 class RedisConfig(BaseSettings):
     url: str
     embedding_cache_ttl: int = 60 * 60 * 24 * 7  # default 7 days
 
-class FastEmbedConfig(BaseSettings):
-    model_name: str= "BAAI/bge-small-en-v1.5"
-    
-class OllamaConfig(BaseSettings):
-    model_name: str
-    host: str = "http://localhost:11434"
 
-class CohereConfig(BaseSettings):
+class EmbeddingProviderConfig(BaseSettings):
+    model_config = ConfigDict(
+        extra="allow"
+    )  # Allows 'host', 'api_key' itd. without defining
+
     model_name: str
+    dimension: int
+
+    # Optional fields (can be filled from .env)
+    host: Optional[str] = None
+    api_key: Optional[str] = None
+
 
 class EmbeddingOption(BaseSettings):
-    provider: str
-
-class EmbeddingProviders(BaseSettings):
-    fastembed: FastEmbedConfig
-    ollama: OllamaConfig
-    cohere: CohereConfig
+    provider: str = 'fastembed'
 
 
+class ChunkConfig(BaseSettings):
+    strategy: str = "fixed"
+    size: int = 512
+    overlap: int = 64
+
+
+class TemporalConfig(BaseSettings):
+    host: str = "localhost:7233"
+    namespace: str = "default"
+    task_queue: str = "ingestion_queue"
+
+
+# ============== MAIN SETTINGS CLASS ==============
 class Settings(BaseSettings):
-
     # DATABASE
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -71,14 +87,29 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str
 
     # YAML Settings
-    redis: RedisConfig
-    embedding_option: EmbeddingOption
-    embedding_providers: EmbeddingProviders
+    redis: RedisConfig = Field(default_factory=RedisConfig)
+    embedding_option: EmbeddingOption = Field(default_factory=EmbeddingOption)
+    embedding_providers: dict[str, EmbeddingProviderConfig] = Field(default_factory=dict)
+    chunker: ChunkConfig = Field(default=ChunkConfig())
+    temporal: TemporalConfig = Field(default_factory=TemporalConfig)
+
+    @property
+    def active_embedding_provider(self) -> EmbeddingProviderConfig:
+        """Automatically returns configuration of the active embedding provider."""
+        provider_name = self.embedding_option.provider
+
+        if provider_name not in self.embedding_providers:
+            raise ValueError(
+                f"Provider '{provider_name}' is not configured or is turned off. "
+                f"Available providers: {list(self.embedding_providers.keys())}"
+            )
+
+        return self.embedding_providers[provider_name]
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",
         env_file_encoding="utf-8",
-        yaml_file= _CURRENT_DIR / 'config.yaml',
+        yaml_file=_CURRENT_DIR / "config.yaml",
         yaml_file_encoding="utf-8",
     )
 
@@ -98,8 +129,5 @@ class Settings(BaseSettings):
             env_settings,
         )
 
-settings = Settings()
 
-if __name__ == '__main__':
-    print(settings.embedding_providers.fastembed.model)
-    print(settings.redis.url)
+settings = Settings()

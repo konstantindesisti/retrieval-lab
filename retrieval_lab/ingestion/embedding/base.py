@@ -18,6 +18,7 @@ Note about Temporal payload size:
   For larger documents (books, documentation), consider having the embedder
   write embeddings directly to the database and return only chunk IDs.
 """
+
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 import hashlib
@@ -25,14 +26,11 @@ import json
 from abc import ABC, abstractmethod
 
 import structlog
-from temporalio import activity
 
 from retrieval_lab.config import settings
-from retrieval_lab.ingestion.activities.chunker import ChunkedDocument
-from retrieval_lab.ingestion.activities.dto import EmbeddedChunk, EmbeddedDocument
 
 if TYPE_CHECKING:
-    from retrieval_lab.cache.client import RedisClient
+    from retrieval_lab.cache.redis import RedisClient
 
 log = structlog.get_logger(__name__)
 
@@ -58,8 +56,11 @@ class BaseEmbedder(ABC):
         """Receives a list of texts and returns a list of embedding vectors."""
         pass
 
+
 class CachedEmbedder(BaseEmbedder):
-    def __init__(self, base_embedder: BaseEmbedder, redis_client: RedisClient, **kwargs: Any) -> None:
+    def __init__(
+        self, base_embedder: BaseEmbedder, redis_client: RedisClient, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.base_embedder = base_embedder
         self.redis = redis_client
@@ -72,7 +73,7 @@ class CachedEmbedder(BaseEmbedder):
     @property
     def provider_name(self) -> str:
         return self.base_embedder.provider_name
-    
+
     def _cache_key(self, text: str) -> str:
         """
         Generates a deterministic cache key: the same text + the same model always
@@ -88,11 +89,8 @@ class CachedEmbedder(BaseEmbedder):
         """
         digest = hashlib.sha256(f"{self.model_name}:{text}".encode()).hexdigest()
         return f"emb:{digest}"
-    
-    async def _batch_cache_get(
-            self, 
-            keys: list[str]
-    ) -> list[list[float] | None]:
+
+    async def _batch_cache_get(self, keys: list[str]) -> list[list[float] | None]:
         """
         Batch Redis GET using a pipeline for all keys – a single round-trip.
 
@@ -111,10 +109,10 @@ class CachedEmbedder(BaseEmbedder):
             results = await pipe.execute()
 
         return [json.loads(r) if r is not None else None for r in results]
-    
+
     async def _batch_cache_set(
-            self, 
-            key_vector_pairs: list[tuple[str, list[float]]],
+        self,
+        key_vector_pairs: list[tuple[str, list[float]]],
     ) -> None:
         """
         Batch Redis SET using a pipeline for multiple embeddings in a single
@@ -134,11 +132,7 @@ class CachedEmbedder(BaseEmbedder):
                 await pipe.set(key, json.dumps(vec), ex=self.ttl)
             await pipe.execute()
 
-
-    async def embed(
-            self, 
-            texts: list[str]
-    ) -> list[list[float]]:
+    async def embed(self, texts: list[str]) -> list[list[float]]:
         # 1. Prepare keys
         if not texts:
             return []
@@ -160,8 +154,7 @@ class CachedEmbedder(BaseEmbedder):
 
             # 5. Save new vector into Redis
             pairs_to_cache = [
-                (keys[i], vec)
-                for i, vec in zip(missing_indexes, new_embeddings)
+                (keys[i], vec) for i, vec in zip(missing_indexes, new_embeddings)
             ]
             await self._batch_cache_set(pairs_to_cache)
 
